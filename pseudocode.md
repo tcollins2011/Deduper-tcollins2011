@@ -38,8 +38,10 @@
 # Pseudo Code Algorithm
 
 <!-- Code to create a Queue Data structure -->
-``` Simple Queue class setup```
+
 class Queue:
+
+``` Simple Queue class setup```
     
     <!-- Initialization Function -->
     def __init__(self) 
@@ -58,9 +60,12 @@ end
 
  
 <!-- Initalize Dictionary of UMI's from reading in the UMI file provided  -->
-``` Initalizes a dictionary where every UMI value from a provided file is a key```
+
 function UMI-Dictionary(UMI_file) *return* a dictionary 
     
+``` Initalizes a dictionary where every UMI value from a provided file is a key```
+
+
     working_dict <- an empty dictionary
     working_file <- open(UMI_file, 'r')
 
@@ -71,8 +76,10 @@ end
 
 
 <!-- Correct for soft Clipping -->
-``` This function corrects for soft clipping by searching the cigar string for any S and returnign the number that comes before it ```
+
 function Soft_Clipping(cigar string) *return* position_offset
+
+``` This function corrects for soft clipping by searching the cigar string for any S and returnign the number that comes before it ```
 
     import re
 
@@ -84,8 +91,10 @@ function Soft_Clipping(cigar string) *return* position_offset
 end
 
 <!-- Identify Read -->
-``` This function creates a string that contains the chromsome name, corrected starting postion, and strandedness of a line from the sam file```
+
 function Extract_read_Info(sam_line) *return* string
+
+``` This function creates a string that contains the chromsome name, corrected starting postion, and strandedness of a line from the sam file```
     
     components <- split sam_line by spaces
    
@@ -93,32 +102,31 @@ function Extract_read_Info(sam_line) *return* string
 
     correction <- Soft_Clipping(cigar_string)
 
-<!-- Corrects for starting position -->
-
     position <- position - correction
-
     unique_identfier <- chromosome_name + strand + position 
 
 
 end
 
 <!-- Extract UMI from Sam Read -->
-``` Extracts the Umi from the QNAME of a Sam File```
+
 function Extract_Umi(sam_line) *return* string
 
+
+``` Extracts the Umi from the QNAME of a Sam File```
+
     import re
-
     target <- index[0] of  split(sam_line)
-
     Extract Umi from QNAME
 
 end
 
 
 <!-- Main Function -->
-``` Main functional loop to create a deduplexed file. Calls all other functions and provides overall workflow.```
 
 function Main(UMI_File, SAM_File) *return* a deduplexed sam file
+
+``` Main functional loop to create a deduplexed file. Calls all other functions and provides overall workflow.```
 
     working_dict <- UMI-Dictionary(UMI_File)
     output <- write_file
