@@ -1,4 +1,3 @@
-import util
 import argparse 
 import re
 
@@ -9,16 +8,17 @@ parser.add_argument('-u', help='absolute file path for list of Umis')
 def createUmiDictionary(umiFile):
     """ A function that parses a file of unique UMI names and 
     returns a dicitonary where each key is an UMI from the file and
-    the value is an empty Queue """
+    the value is an empty set """
     umiDictionary = {}
     with open(umiFile) as file:
         for line in file:
-            umiDictionary[line.rstrip()] = util.Queue()
+            umiDictionary[line.rstrip()] = set()
     return umiDictionary
 
 def softClipping(cigarString, strand):
     """ A function that calculates the amount of softclipping 
-    present in a read and returns an offset value to adjust position."""
+    present in a read and returns an offset value to adjust the reads 
+    start position."""
     positionOffset = 0
 
     # Forward Strand Logic
@@ -43,22 +43,34 @@ def softClipping(cigarString, strand):
     return positionOffset
 
 def extractUmi(qname):
+    """ A function that extracts an UMI identifier from a qname"""
     umi = re.search("(?!.*:).*" ,qname)
     return umi.group()
 
 def determineStrand(bitwise:int,position:int):
+    """ A function that determines if a specific bit is 1 or 0. This determines
+    if a strand is forward or reverse"""
     if bitwise & (1 << position):
         return 'Reverse'
     return 'Forward'
 
 def extractReadInfo(sam_line):
-    components = sam_line.split()
-    position =  components[1]
-    strand = components[1]
-    cigar_string = components[1]
-    chromosome_name = components[1]
+    """ A function that extracts relevant information from a SAM file and calls helper functions"""
+    sam_fields = sam_line.split("\t")
+    read_umi = extractUmi(sam_fields[0])
+    chromosome = sam_fields[2]
+    bitwise = sam_fields[1]
+    position = sam_fields[3]
+    cigar_string = sam_fields[5]
+
+    strand = determineStrand(int(bitwise),4)
+    offset = softClipping(cigar_string, strand)
+    fixed_position = int(position) - int(offset)
+
+    return read_umi, chromosome, strand, fixed_position
 
 def main():
+    """ Main Loop. This function takes in a sam file and umi List and removes PCR duplicates from the sam file"""
     args = parser.parse_args()
     sam_file = args.f
     umi_file = args.u
@@ -72,23 +84,12 @@ def main():
             if line.startswith('@'):
                 output_file.write(line)
             else:
-                sam_fields = line.split("\t")
-                read_umi = extractUmi(sam_fields[0])
-                chromosome = sam_fields[2]
-                bitwise = sam_fields[1]
-                position = sam_fields[3]
-                cigar_string = sam_fields[5]
-                strand = determineStrand(int(bitwise),4)
-                offset = softClipping(cigar_string, strand)
-                fixed_position = int(position) - int(offset)
-
-                # chromosome, position, strand 
-                key_value = f'{chromosome}_{strand}_{fixed_position}'
+                read_umi, chromosome, strand, position = extractReadInfo(line)
+                key_value = f'{chromosome}_{strand}_{position}'
                 if read_umi in umi.keys():
-                    if umi[read_umi].itemNotInQueue(key_value):
+                    if key_value not in umi[read_umi]:
+                        umi[read_umi].add(key_value)
                         output_file.write(line)
-                    umi[read_umi].push(key_value)
-                    umi[read_umi].lengthLimit()
     output_file.close()
 
 main()
